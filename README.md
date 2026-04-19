@@ -163,6 +163,38 @@ db.restaurants.aggregate([
 ```
 ![Table Booking vs Rating](screenshots/09_agg_table_booking.png)
 
+ ### A6: Top 10 most popular cuisines in Bangalore
+```js
+db.restaurants.aggregate([
+  { $group: { _id: "$cuisines", count: { $sum: 1 } } },
+  { $sort: { count: -1 } },
+  { $limit: 10 }
+])
+```
+![Top Cuisines](screenshots/15_agg_cuisines.png)
+
+---
+
+### A7: Restaurant type distribution
+```js
+db.restaurants.aggregate([
+  { $group: { _id: "$rest_type", count: { $sum: 1 } } },
+  { $sort: { count: -1 } },
+  { $limit: 10 }
+])
+```
+![Restaurant Types](screenshots/16_agg_rest_type.png)
+
+---
+
+### A8: Count by listing category type
+```js
+db.restaurants.aggregate([
+  { $group: { _id: "$listed_in(type)", count: { $sum: 1 } } },
+  { $sort: { count: -1 } }
+])
+```
+![Category Types](screenshots/17_agg_category_type.png)
 ---
 
 ## 👻 Ghost Detection — Update Operations
@@ -190,7 +222,45 @@ db.restaurants.find({}).forEach(function(doc) {
 ```
 ![Ghost Scoring Running](screenshots/10_ghost_scoring.png)
 
+### U2: Flag all High risk restaurants as ghost = true
+```js
+db.restaurants.updateMany(
+  { risk_level: "High" },
+  { $set: { is_ghost: true } }
+)
+// Result: modifiedCount: 39374
+```
+![Flag Ghost](screenshots/18_flag_ghost.png)
+
 ---
+
+### U3: Flag Low and Medium risk as legitimate
+```js
+db.restaurants.updateMany(
+  { risk_level: { $in: ["Low", "Medium"] } },
+  { $set: { is_ghost: false } }
+)
+// Result: modifiedCount: 73126
+```
+![Flag Legit](screenshots/19_flag_legit.png)
+
+---
+
+### U5: View a sample ghost restaurant document
+```js
+db.restaurants.findOne({ is_ghost: true })
+// Shows: ghost_score: 4+, risk_level: "High", is_ghost: true
+```
+![Sample Ghost Restaurant](screenshots/20_sample_ghost.png)
+
+---
+
+### U6: View a sample legitimate restaurant document
+```js
+db.restaurants.findOne({ is_ghost: false })
+// Shows: ghost_score: 0-1, risk_level: "Low", is_ghost: false
+```
+![Sample Legit Restaurant](screenshots/21_sample_legit.png)
 
 ### U2–U4: Flag ghost vs legitimate + verify counts
 ```js
