@@ -1,14 +1,17 @@
-# 👻 Ghost Restaurant Detection — Zomato Bangalore (Kaggle)
-### MongoDB · Big Data · Saanvi Jain
+# 👻 Ghost Restaurant Detection — Zomato Bangalore
+### MongoDB · Big Data · Saanvi Jain 
+
+---
 
 ## 📌 Project Summary
 
-Analysed **1,12,500 real Zomato Bangalore restaurant listings** stored in MongoDB
-to automatically detect Ghost Restaurants or Cloud Kitchen — fake or inactive listings that
-deceive customers on food delivery platforms.
+Analysed **1,12,500 real Zomato Bangalore restaurant listings** stored in
+MongoDB to automatically detect Ghost Restaurants or Cloud Kitchens — fake or inactive listings
+that deceive customers on food delivery platforms.
 
-Built a custom **Ghost Restaurant Scoring Algorithm** entirely using MongoDB operations.
+A custom **Ghost Restaurant Scoring Algorithm** was built entirely using MongoDB operations.
 
+---
 
 ## 🔑 Key Result
 
@@ -22,16 +25,29 @@ Built a custom **Ghost Restaurant Scoring Algorithm** entirely using MongoDB ope
 
 > **1 in 3 Zomato Bangalore listings is a Ghost Restaurant.**
 
+---
+
+## 🗃️ Database Details
+
+| Field | Value |
+|-------|-------|
+| Database | `ghost_restaurant_db` |
+| Collection | `restaurants` |
+| Total Records | 1,12,500 |
+| Tool | MongoDB Compass + mongosh |
+| Connection | localhost:27017 |
+| Fields Added | `ghost_score` · `risk_level` · `is_ghost` |
+
+---
+
 ## ✅ PROOF — MongoDB Running Live
 
-### Database Setup — 1,12,500 records confirmed in MongoDB
+### Database setup — 1,12,500 records confirmed
 ![Database Setup](screenshots/01_setup.png)
 
 ---
 
 ## 👻 Ghost Scoring Model
-
-Each restaurant gets points based on 6 conditions:
 
 | Condition | Points | Reason |
 |-----------|--------|--------|
@@ -42,16 +58,16 @@ Each restaurant gets points based on 6 conditions:
 | `rate < 3.0` | +2 | Very poor customer rating |
 | `rate 3.0–3.5` | +1 | Below average quality |
 
-**Score → Risk Level:**
+**Score → Risk:**
 - 0–1 = 🟢 Low (Legitimate)
 - 2–3 = 🟡 Medium (Suspicious)
 - 4+ = 🔴 High (Ghost Restaurant)
 
 ---
 
-## 🔍 MongoDB Filter Queries
+## 🔍 Filter Queries
 
-### F1–F3: Basic finds — first 5 restaurants, online ordering, table booking
+### F1–F3: First 5 restaurants · Online ordering · Table booking
 ```js
 db.restaurants.find({}).limit(5)
 db.restaurants.find({ online_order: "Yes" }).limit(10)
@@ -136,8 +152,8 @@ db.restaurants.aggregate([
   { $match: { rate: { $gt: 0 } } },
   { $group: {
       _id: "$online_order",
-      avg_rating: { $avg: "$rate" },
-      avg_votes:  { $avg: "$votes" },
+      avg_rating:  { $avg: "$rate" },
+      avg_votes:   { $avg: "$votes" },
       total_count: { $sum: 1 }
   }}
 ])
@@ -155,15 +171,17 @@ db.restaurants.aggregate([
   { $match: { rate: { $gt: 0 } } },
   { $group: {
       _id: "$book_table",
-      avg_rating: { $avg: "$rate" },
-      avg_votes:  { $avg: "$votes" },
+      avg_rating:  { $avg: "$rate" },
+      avg_votes:   { $avg: "$votes" },
       total_count: { $sum: 1 }
   }}
 ])
 ```
 ![Table Booking vs Rating](screenshots/09_agg_table_booking.png)
 
- ### A6: Top 10 most popular cuisines in Bangalore
+---
+
+### A6: Top 10 most popular cuisines in Bangalore
 ```js
 db.restaurants.aggregate([
   { $group: { _id: "$cuisines", count: { $sum: 1 } } },
@@ -195,11 +213,12 @@ db.restaurants.aggregate([
 ])
 ```
 ![Category Types](screenshots/17_agg_category_type.png)
+
 ---
 
 ## 👻 Ghost Detection — Update Operations
 
-### U1: Score assigned to ALL 1,12,500 restaurants
+### U1: Ghost score calculated and assigned to ALL 1,12,500 restaurants
 ```js
 db.restaurants.find({}).forEach(function(doc) {
   let score = 0;
@@ -222,13 +241,15 @@ db.restaurants.find({}).forEach(function(doc) {
 ```
 ![Ghost Scoring Running](screenshots/10_ghost_scoring.png)
 
-### U2: Flag all High risk restaurants as ghost = true
+---
+
+### U2: Flag all High risk as ghost = true
 ```js
 db.restaurants.updateMany(
   { risk_level: "High" },
   { $set: { is_ghost: true } }
 )
-// Result: modifiedCount: 39374
+// modifiedCount: 39374
 ```
 ![Flag Ghost](screenshots/18_flag_ghost.png)
 
@@ -240,43 +261,36 @@ db.restaurants.updateMany(
   { risk_level: { $in: ["Low", "Medium"] } },
   { $set: { is_ghost: false } }
 )
-// Result: modifiedCount: 73126
+// modifiedCount: 73126
 ```
 ![Flag Legit](screenshots/19_flag_legit.png)
+
+---
+
+### U4: Verify final counts
+```js
+db.restaurants.countDocuments({ is_ghost: true })   // 39374
+db.restaurants.countDocuments({ is_ghost: false })  // 73126
+```
+![Ghost Counts](screenshots/11_ghost_counts.png)
 
 ---
 
 ### U5: View a sample ghost restaurant document
 ```js
 db.restaurants.findOne({ is_ghost: true })
-// Shows: ghost_score: 4+, risk_level: "High", is_ghost: true
+// ghost_score: 4+ · risk_level: "High" · is_ghost: true
 ```
-![Sample Ghost Restaurant](screenshots/20_sample_ghost.png)
+![Sample Ghost](screenshots/20_sample_ghost.png)
 
 ---
 
 ### U6: View a sample legitimate restaurant document
 ```js
 db.restaurants.findOne({ is_ghost: false })
-// Shows: ghost_score: 0-1, risk_level: "Low", is_ghost: false
+// ghost_score: 0-1 · risk_level: "Low" · is_ghost: false
 ```
-![Sample Legit Restaurant](screenshots/21_sample_legit.png)
-
-### U2–U4: Flag ghost vs legitimate + verify counts
-```js
-db.restaurants.updateMany(
-  { risk_level: "High" },
-  { $set: { is_ghost: true } }
-)
-db.restaurants.updateMany(
-  { risk_level: { $in: ["Low","Medium"] } },
-  { $set: { is_ghost: false } }
-)
-// Verify:
-db.restaurants.countDocuments({ is_ghost: true })   // → 39374
-db.restaurants.countDocuments({ is_ghost: false })  // → 73126
-```
-![Ghost Flag Results](screenshots/11_ghost_counts.png)
+![Sample Legit](screenshots/21_sample_legit.png)
 
 ---
 
@@ -294,7 +308,95 @@ db.restaurants.getIndexes()
 
 ---
 
-## 🏁 Final Summary Query
+## 🏁 Final Aggregation Queries
+
+### FINAL 1: Ghost vs Legitimate full breakdown
+```js
+db.restaurants.aggregate([
+  { $group: {
+      _id: "$risk_level",
+      total_count: { $sum: 1 },
+      avg_rating:  { $avg: "$rate" },
+      avg_votes:   { $avg: "$votes" },
+      avg_cost:    { $avg: "$approx_cost(for two people)" }
+  }},
+  { $sort: { total_count: -1 } }
+])
+```
+![Final 1 Breakdown](screenshots/22_final1_breakdown.png)
+
+---
+
+### FINAL 2: Top 10 locations with most ghost restaurants
+```js
+db.restaurants.aggregate([
+  { $match: { is_ghost: true } },
+  { $group: { _id: "$location", ghost_count: { $sum: 1 } } },
+  { $sort: { ghost_count: -1 } },
+  { $limit: 10 }
+])
+// BTM Layout = 4458 ghost restaurants
+```
+![Final 2 Ghost Locations](screenshots/23_final2_ghost_locations.png)
+
+---
+
+### FINAL 3: Top 10 locations with most legitimate restaurants
+```js
+db.restaurants.aggregate([
+  { $match: { is_ghost: false } },
+  { $group: { _id: "$location", legit_count: { $sum: 1 } } },
+  { $sort: { legit_count: -1 } },
+  { $limit: 10 }
+])
+```
+![Final 3 Legit Locations](screenshots/24_final3_legit_locations.png)
+
+---
+
+### FINAL 4: Which cuisines are most common in ghost restaurants
+```js
+db.restaurants.aggregate([
+  { $match: { is_ghost: true } },
+  { $group: { _id: "$cuisines", count: { $sum: 1 } } },
+  { $sort: { count: -1 } },
+  { $limit: 10 }
+])
+```
+![Final 4 Ghost Cuisines](screenshots/25_final4_ghost_cuisines.png)
+
+---
+
+### FINAL 5: Ghost restaurant percentage out of total
+```js
+db.restaurants.aggregate([
+  { $group: { _id: "$is_ghost", count: { $sum: 1 } } }
+])
+// false = 73126 (65%) · true = 39374 (35%)
+```
+![Final 5 Percentage](screenshots/26_final5_percentage.png)
+
+---
+
+### FINAL 6: Best rated locations in Bangalore
+```js
+db.restaurants.aggregate([
+  { $match: { rate: { $gt: 0 } } },
+  { $group: {
+      _id: "$location",
+      avg_rating: { $avg: "$rate" },
+      total: { $sum: 1 }
+  }},
+  { $match: { total: { $gt: 10 } } },
+  { $sort: { avg_rating: -1 } },
+  { $limit: 10 }
+])
+```
+![Final 6 Best Locations](screenshots/27_final6_best_locations.png)
+
+---
+
+### FINAL 7: Overall project summary stats
 ```js
 db.restaurants.aggregate([
   { $group: {
@@ -306,26 +408,26 @@ db.restaurants.aggregate([
       total_legit: { $sum: { $cond: [{ $eq: ["$is_ghost", false] }, 1, 0] } }
   }}
 ])
-// Result: total=112500, ghost=39374, legit=73126
+// total=112500 · ghost=39374 · legit=73126 · avg_rating=3.70 · avg_cost=₹555
 ```
-![Final Summary](screenshots/13_final_summary.png)
+![Final 7 Summary](screenshots/13_final_summary.png)
 
 ---
 
 ## 📈 Python Data Visualisations
 
 > Generated using Python (matplotlib + pymongo) by directly
-> querying the live MongoDB database. See `visualisation.py`
+> querying the live MongoDB database.
+> Full code in `visualisation.py`
 
 ![All 6 Charts](screenshots/14_charts.png)
 
-**Charts:**
-- Chart 1 — 35% Ghost vs 65% Legitimate (Pie)
-- Chart 2 — Average rating drops as risk increases (Bar)
-- Chart 3 — Top 10 Bangalore locations by count (Bar)
-- Chart 4 — Online ordering = higher ratings (Bar)
-- Chart 5 — Ghost score distribution across 1,12,500 restaurants
-- Chart 6 — Top 10 cuisines in Bangalore
+- **Chart 1** — 35% Ghost vs 65% Legitimate (Pie Chart)
+- **Chart 2** — Average rating drops as risk level increases
+- **Chart 3** — Top 10 Bangalore locations by restaurant count
+- **Chart 4** — Online ordering restaurants have higher ratings
+- **Chart 5** — Ghost score distribution across all 1,12,500 restaurants
+- **Chart 6** — Top 10 cuisines in Bangalore
 
 ---
 
@@ -333,7 +435,7 @@ db.restaurants.aggregate([
 
 | # | Finding | Proof |
 |---|---------|-------|
-| 1 | **35% of listings are Ghost Restaurants** | 39,374 flagged out of 1,12,500 |
+| 1 | **35% of listings are Ghost Restaurants** | 39,374 out of 1,12,500 flagged |
 | 2 | **Table booking = strongest legitimacy signal** | 4.14 vs 3.62 rating · 6x more votes |
 | 3 | **Online ordering correlates with quality** | Yes=3.72 avg · No=3.66 avg |
 | 4 | **BTM Layout has most ghost restaurants** | 4,458 ghost listings |
@@ -341,20 +443,10 @@ db.restaurants.aggregate([
 
 ---
 
-## 🗃️ Database Details
+## 📁 Files in This Repository
 
-| Field | Value |
-|-------|-------|
-| Database | `ghost_restaurant_db` |
-| Collection | `restaurants` |
-| Records | 1,12,500 |
-| Tool | MongoDB Compass + mongosh |
-| Connection | localhost:27017 |
-| Fields Added | `ghost_score`, `risk_level`, `is_ghost` |
-
----
-
-## 👩‍💻 Submitted By
-
-**Saanvi Jain** | Roll No: 24215409 | 4EDA
-Big Data CIA-3 | Prof. Indu Verma | School of Sciences
+| File | Description |
+|------|-------------|
+| `README.md` | Full project — all queries, results, screenshots |
+| `visualisation.py` | Python code that generated all 6 charts |
+| `screenshots/` | 27 screenshots of real MongoDB terminal output |
